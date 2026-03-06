@@ -1,21 +1,37 @@
-from PyQt6.QtWidgets import QWidget,QVBoxLayout,QLineEdit,QLabel,QPushButton,QFrame
+from PyQt6.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QPushButton,
+    QFrame,
+    QComboBox
+)
+
 from config import COCO_CLASSES
 
-
 class BoxItem(QWidget):
-
     def __init__(self,index,rect,cls,tool):
 
         super().__init__()
 
-        self.index=index
-        self.rect=rect
-        self.cls=cls
-        self.tool=tool
+        self.index = index
+        self.rect = rect
+        self.cls = cls
+        self.tool = tool
 
+        main_layout = QVBoxLayout()
 
-        # container frame
+        index_label = QLabel(f"{index+1}")
+
+        index_label.setStyleSheet("""
+        color: #2aa3ff;
+        font-size: 12px;
+        font-weight: bold;
+        margin-left: 6px;
+        """)
+
         frame = QFrame()
+
         frame.setStyleSheet("""
         QFrame{
             border:2px solid #555;
@@ -26,30 +42,40 @@ class BoxItem(QWidget):
         }
         """)
 
-        layout=QVBoxLayout()
+        layout = QVBoxLayout()
 
-        # label name
-        self.label_edit=QLineEdit(f"{index+1}. {COCO_CLASSES[cls]}")
+        self.class_combo = QComboBox()
 
-        # coordinates
-        coords=QLabel(
+        for i,name in enumerate(COCO_CLASSES):
+            self.class_combo.addItem(f"{i}. {name}")
+
+        self.class_combo.setCurrentIndex(cls)
+
+        coords = QLabel(
             f"x1={rect.left()} y1={rect.top()} x2={rect.right()} y2={rect.bottom()}"
         )
 
-        delete_btn=QPushButton("Delete")
+        coords.setStyleSheet("""
+        background:#2a2a2a;
+        padding:6px;
+        border-radius:4px;
+        """)
 
-        layout.addWidget(self.label_edit)
+        delete_btn = QPushButton("Delete")
+
+        layout.addWidget(self.class_combo)
         layout.addWidget(coords)
         layout.addWidget(delete_btn)
 
         frame.setLayout(layout)
 
-        main_layout=QVBoxLayout()
+        main_layout.addWidget(index_label)
         main_layout.addWidget(frame)
 
         self.setLayout(main_layout)
 
         delete_btn.clicked.connect(self.delete_box)
+        self.class_combo.currentIndexChanged.connect(self.change_class)
 
     def set_selected(self, selected):
 
@@ -77,6 +103,8 @@ class BoxItem(QWidget):
 
         self.tool.boxes.pop(self.index)
 
+        self.tool.selected_box = None
+
         self.tool.save_boxes()
 
         if self.tool.panel:
@@ -84,25 +112,15 @@ class BoxItem(QWidget):
 
         self.tool.update()
 
-    def change_class(self):
+    def change_class(self, index):
 
-        text = self.label_edit.text()
+        rect, _ = self.tool.boxes[self.index]
 
-        if "." in text:
+        self.tool.boxes[self.index] = (rect, index)
 
-            name = text.split(".", 1)[1].strip()
+        self.tool.save_boxes()
 
-        else:
+        if self.tool.panel:
+            self.tool.panel.refresh()
 
-            name = text.strip()
-
-        if name in COCO_CLASSES:
-            cls = COCO_CLASSES.index(name)
-
-            rect, _ = self.tool.boxes[self.index]
-
-            self.tool.boxes[self.index] = (rect, cls)
-
-            self.tool.save_boxes()
-
-            self.tool.update()
+        self.tool.update()
