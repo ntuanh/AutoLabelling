@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QWidget,QVBoxLayout,QLineEdit,QLabel,QPushButton
+from PyQt6.QtWidgets import QWidget,QVBoxLayout,QLineEdit,QLabel,QPushButton,QFrame
 from config import COCO_CLASSES
 
 
@@ -8,25 +8,30 @@ class BoxItem(QWidget):
 
         super().__init__()
 
-        self.setStyleSheet("""
-        QWidget{
-            border:2px solid #555;
-            border-radius:6px;
-            padding:6px;
-            margin:4px;
-            background:#1e1e1e;
-        }
-        """)
-
         self.index=index
         self.rect=rect
         self.cls=cls
         self.tool=tool
 
+
+        # container frame
+        frame = QFrame()
+        frame.setStyleSheet("""
+        QFrame{
+            border:2px solid #555;
+            border-radius:6px;
+            padding:6px;
+            margin:6px;
+            background:#1e1e1e;
+        }
+        """)
+
         layout=QVBoxLayout()
 
-        self.label_edit=QLineEdit(COCO_CLASSES[cls])
+        # label name
+        self.label_edit=QLineEdit(f"{index+1}. {COCO_CLASSES[cls]}")
 
+        # coordinates
         coords=QLabel(
             f"x1={rect.left()} y1={rect.top()} x2={rect.right()} y2={rect.bottom()}"
         )
@@ -37,10 +42,14 @@ class BoxItem(QWidget):
         layout.addWidget(coords)
         layout.addWidget(delete_btn)
 
-        self.setLayout(layout)
+        frame.setLayout(layout)
+
+        main_layout=QVBoxLayout()
+        main_layout.addWidget(frame)
+
+        self.setLayout(main_layout)
 
         delete_btn.clicked.connect(self.delete_box)
-        self.label_edit.editingFinished.connect(self.change_class)
 
     def set_selected(self, selected):
 
@@ -77,15 +86,22 @@ class BoxItem(QWidget):
 
     def change_class(self):
 
-        name=self.label_edit.text()
+        text = self.label_edit.text()
+
+        if "." in text:
+
+            name = text.split(".", 1)[1].strip()
+
+        else:
+
+            name = text.strip()
 
         if name in COCO_CLASSES:
+            cls = COCO_CLASSES.index(name)
 
-            cls=COCO_CLASSES.index(name)
+            rect, _ = self.tool.boxes[self.index]
 
-            rect,_=self.tool.boxes[self.index]
-
-            self.tool.boxes[self.index]=(rect,cls)
+            self.tool.boxes[self.index] = (rect, cls)
 
             self.tool.save_boxes()
 

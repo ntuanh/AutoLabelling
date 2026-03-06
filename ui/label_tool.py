@@ -301,7 +301,11 @@ class LabelTool(QWidget):
 
             painter.drawRect(scaled_rect)
 
-            painter.drawText(x,y-5,COCO_CLASSES[cls])
+            painter.drawText(
+                x,
+                y - 5,
+                f"{i + 1}. {COCO_CLASSES[cls]}"
+            )
 
 
         if self.drawing:
