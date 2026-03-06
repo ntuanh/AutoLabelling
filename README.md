@@ -8,11 +8,11 @@ The tool allows you to quickly **navigate frames, edit labels, delete objects, a
 
 # 1. Prepare Dataset
 
-Run the dataset generation notebook:
+Upload your video ( rename `video.mp4`) run the dataset generation notebook:
 
-https://colab.research.google.com/drive/1iFjVq-5QtHfJkEJ85zm7Kin2oJXDVqn0?usp=sharing
+[Colab](https://colab.research.google.com/drive/1iFjVq-5QtHfJkEJ85zm7Kin2oJXDVqn0?usp=sharing)
 
-Download the generated dataset and **unzip it** ( create **dataset** directory) so the project structure becomes:
+Click `Run all` and download the generated dataset and **unzip it** ( create **dataset** directory) so the project structure becomes:
 
 ```text
 dataset/
