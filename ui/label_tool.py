@@ -26,7 +26,22 @@ class LabelTool(QWidget):
         self.boxes=[]
         self.selected_box=None
 
+<<<<<<< HEAD
         self.mode = "insert"   # insert / delete / resize
+=======
+        self.mode="insert"
+        self.current_class = 0
+
+        # Load shortcuts
+        from config_label import SHORTCUT_LABELS
+        self.shortcut_mapping = {}
+        for key_str, label_name in SHORTCUT_LABELS:
+            key_str = key_str.upper()
+            if label_name in COCO_CLASSES:
+                self.shortcut_mapping[key_str] = COCO_CLASSES.index(label_name)
+            else:
+                print(f"Cảnh báo: Nhãn '{label_name}' trong config_label.py không có trong COCO_CLASSES")
+>>>>>>> 745daf6431228b58ec4c3b29b20fb8301bef70a6
 
         self.start_point=QPoint()
         self.end_point=QPoint()
@@ -92,11 +107,26 @@ class LabelTool(QWidget):
 
     def keyPressEvent(self,event):
 
+        text = event.text().upper()
+        if text and text in self.shortcut_mapping:
+            self.mode = "insert"
+            self.current_class = self.shortcut_mapping[text]
+            if self.panel:
+                self.panel.refresh()
+            self.update()
+            return
+
         if event.key()==Qt.Key.Key_I:
             self.mode="insert"
 
         elif event.key()==Qt.Key.Key_D:
-            self.mode="delete"
+            if self.selected_box is not None:
+                self.boxes.pop(self.selected_box)
+                self.selected_box = None
+                self.save_boxes()
+                if self.panel:
+                    self.panel.refresh()
+                self.update()
 
         elif event.key() == Qt.Key.Key_R:
             self.mode = "resize"
@@ -279,7 +309,7 @@ class LabelTool(QWidget):
 
             rect=QRect(self.start_point,self.end_point)
 
-            self.boxes.append((rect,0))
+            self.boxes.append((rect,self.current_class))
 
             self.resizing = False
             self.resize_edge = None
@@ -363,6 +393,7 @@ class LabelTool(QWidget):
         painter.setPen(QPen(Qt.GlobalColor.yellow,2))
 
         painter.drawText(20,30,f"Frame {self.index+1}/{len(self.image_files)}")
+<<<<<<< HEAD
         painter.drawText(
             20,
             60,
@@ -410,3 +441,7 @@ class LabelTool(QWidget):
                 return i
 
         return None
+=======
+        painter.drawText(20,60,f"Mode: {self.mode} (Class: {COCO_CLASSES[self.current_class]})")
+        painter.drawText(20,90,f"Boxes: {len(self.boxes)}")
+>>>>>>> 745daf6431228b58ec4c3b29b20fb8301bef70a6
