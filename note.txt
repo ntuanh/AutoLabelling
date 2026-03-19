@@ -1,0 +1,2 @@
+- tăng vùng bấm chuột  , nhỏ quá không bấm được .
+- phím tắt để xóa .

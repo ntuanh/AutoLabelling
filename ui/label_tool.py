@@ -26,9 +26,6 @@ class LabelTool(QWidget):
         self.boxes=[]
         self.selected_box=None
 
-<<<<<<< HEAD
-        self.mode = "insert"   # insert / delete / resize
-=======
         self.mode="insert"
         self.current_class = 0
 
@@ -41,7 +38,6 @@ class LabelTool(QWidget):
                 self.shortcut_mapping[key_str] = COCO_CLASSES.index(label_name)
             else:
                 print(f"Cảnh báo: Nhãn '{label_name}' trong config_label.py không có trong COCO_CLASSES")
->>>>>>> 745daf6431228b58ec4c3b29b20fb8301bef70a6
 
         self.start_point=QPoint()
         self.end_point=QPoint()
@@ -52,11 +48,6 @@ class LabelTool(QWidget):
 
         self.load_frame()
 
-        self.resizing = False
-        self.resize_edge = None
-        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-
-        self.handle_size = 6
 
 
     def set_bbox_panel(self,panel):
@@ -64,6 +55,12 @@ class LabelTool(QWidget):
         self.panel=panel
 
         self.panel.refresh()
+
+
+
+    # ----------------------------------
+    # LOAD FRAME
+    # ----------------------------------
 
     def load_frame(self):
 
@@ -80,6 +77,12 @@ class LabelTool(QWidget):
             self.panel.refresh()
 
         self.update()
+
+
+
+    # ----------------------------------
+    # SAVE BOXES
+    # ----------------------------------
 
     def save_boxes(self):
 
@@ -105,6 +108,11 @@ class LabelTool(QWidget):
                 f.write(f"{cls} {xc} {yc} {w} {h}\n")
 
 
+
+    # ----------------------------------
+    # KEYBOARD
+    # ----------------------------------
+
     def keyPressEvent(self,event):
 
         text = event.text().upper()
@@ -127,9 +135,6 @@ class LabelTool(QWidget):
                 if self.panel:
                     self.panel.refresh()
                 self.update()
-
-        elif event.key() == Qt.Key.Key_R:
-            self.mode = "resize"
 
         elif event.key()==Qt.Key.Key_U:
 
@@ -184,6 +189,11 @@ class LabelTool(QWidget):
                 self.update()
 
 
+
+    # ----------------------------------
+    # ZOOM
+    # ----------------------------------
+
     def wheelEvent(self,event):
 
         if event.angleDelta().y()>0:
@@ -194,6 +204,11 @@ class LabelTool(QWidget):
         self.update()
 
 
+
+    # ----------------------------------
+    # MOUSE
+    # ----------------------------------
+
     def mousePressEvent(self,event):
 
         point=event.position().toPoint()
@@ -203,23 +218,16 @@ class LabelTool(QWidget):
             int(point.y()/self.zoom_scale)
         )
 
-        for i, (rect, cls) in enumerate(self.boxes):
+        for i,(rect,cls) in enumerate(self.boxes):
 
             if rect.contains(point):
 
-                self.selected_box = i
-
-                if self.mode == "resize":
-
-                    handle = self.get_handle_index(rect, point)
-
-                    if handle is not None:
-                        self.resizing = True
-                        self.resize_handle = handle
-                        return
+                self.selected_box=i
 
                 self.update()
+
                 return
+
 
         if self.mode=="insert":
 
@@ -246,61 +254,25 @@ class LabelTool(QWidget):
 
                     break
 
-    def mouseMoveEvent(self, event):
 
-        point = event.position().toPoint()
 
-        point = QPoint(
-            int(point.x() / self.zoom_scale),
-            int(point.y() / self.zoom_scale)
-        )
+    def mouseMoveEvent(self,event):
 
-        # -------- drawing new box --------
         if self.drawing:
-            self.end_point = point
+
+            point=event.position().toPoint()
+
+            point=QPoint(
+                int(point.x()/self.zoom_scale),
+                int(point.y()/self.zoom_scale)
+            )
+
+            self.end_point=point
 
             self.update()
 
-        # -------- resize selected box --------
-        if self.mode == "resize" and self.resizing and self.selected_box is not None:
 
-            rect, cls = self.boxes[self.selected_box]
 
-            new_rect = QRect(rect)
-
-            if self.resize_handle == 0:  # top-left
-                new_rect.setTop(point.y())
-                new_rect.setLeft(point.x())
-
-            elif self.resize_handle == 1:  # top-right
-                new_rect.setTop(point.y())
-                new_rect.setRight(point.x())
-
-            elif self.resize_handle == 2:  # bottom-left
-                new_rect.setBottom(point.y())
-                new_rect.setLeft(point.x())
-
-            elif self.resize_handle == 3:  # bottom-right
-                new_rect.setBottom(point.y())
-                new_rect.setRight(point.x())
-
-            if new_rect != rect:
-                self.boxes[self.selected_box] = (new_rect, cls)
-                self.update()
-
-        if self.mode == "resize" and self.selected_box is not None:
-            rect, _ = self.boxes[self.selected_box]
-
-            edge = self.get_resize_edge(rect, point)
-
-            if edge in ["left", "right"]:
-                self.setCursor(Qt.CursorShape.SizeHorCursor)
-
-            elif edge in ["top", "bottom"]:
-                self.setCursor(Qt.CursorShape.SizeVerCursor)
-
-            else:
-                self.setCursor(Qt.CursorShape.ArrowCursor)
     def mouseReleaseEvent(self,event):
 
         if self.drawing:
@@ -311,15 +283,18 @@ class LabelTool(QWidget):
 
             self.boxes.append((rect,self.current_class))
 
-            self.resizing = False
-            self.resize_edge = None
-
             self.save_boxes()
 
             if self.panel:
                 self.panel.refresh()
 
             self.update()
+
+
+
+    # ----------------------------------
+    # DRAW
+    # ----------------------------------
 
     def paintEvent(self,event):
 
@@ -348,25 +323,9 @@ class LabelTool(QWidget):
             else:
                 pen=QPen(Qt.GlobalColor.red,2)
 
-
             painter.setPen(pen)
-            painter.setBrush(Qt.BrushStyle.NoBrush)
+
             painter.drawRect(scaled_rect)
-
-            if i == self.selected_box:
-
-                handles = self.get_handles(rect)
-
-                painter.setBrush(Qt.GlobalColor.blue)
-                painter.setPen(Qt.GlobalColor.blue)
-
-                for h in handles:
-                    x = int(h.x() * self.zoom_scale)
-                    y = int(h.y() * self.zoom_scale)
-                    w = int(h.width() * self.zoom_scale)
-                    h2 = int(h.height() * self.zoom_scale)
-
-                    painter.drawRect(QRect(x, y, w, h2))
 
             painter.drawText(
                 x,
@@ -389,59 +348,8 @@ class LabelTool(QWidget):
             painter.drawRect(QRect(x,y,w,h))
 
 
-
         painter.setPen(QPen(Qt.GlobalColor.yellow,2))
 
         painter.drawText(20,30,f"Frame {self.index+1}/{len(self.image_files)}")
-<<<<<<< HEAD
-        painter.drawText(
-            20,
-            60,
-            f"Mode: {self.mode.upper()}  (I:insert  D:delete  R:resize)"
-        )
-        painter.drawText(20,90,f"Boxes: {len(self.boxes)}")
-
-    def get_resize_edge(self, rect, point, margin=8):
-
-        x = point.x()
-        y = point.y()
-
-        if abs(x - rect.left()) < margin:
-            return "left"
-
-        if abs(x - rect.right()) < margin:
-            return "right"
-
-        if abs(y - rect.top()) < margin:
-            return "top"
-
-        if abs(y - rect.bottom()) < margin:
-            return "bottom"
-
-        return None
-
-    def get_handles(self, rect):
-
-        s = self.handle_size
-
-        return [
-            QRect(rect.left() - s, rect.top() - s, s * 2, s * 2),  # top-left
-            QRect(rect.right() - s, rect.top() - s, s * 2, s * 2),  # top-right
-            QRect(rect.left() - s, rect.bottom() - s, s * 2, s * 2),  # bottom-left
-            QRect(rect.right() - s, rect.bottom() - s, s * 2, s * 2),  # bottom-right
-        ]
-
-    def get_handle_index(self, rect, point):
-
-        handles = self.get_handles(rect)
-
-        for i, h in enumerate(handles):
-
-            if h.contains(point):
-                return i
-
-        return None
-=======
         painter.drawText(20,60,f"Mode: {self.mode} (Class: {COCO_CLASSES[self.current_class]})")
         painter.drawText(20,90,f"Boxes: {len(self.boxes)}")
->>>>>>> 745daf6431228b58ec4c3b29b20fb8301bef70a6
